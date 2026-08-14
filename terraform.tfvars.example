@@ -1,0 +1,2 @@
+netbox_server_url = "https://xxxxxxxx.cloud.netboxapp.com"
+netbox_api_token = "nbt_123.abcdefg"
