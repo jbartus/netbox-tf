@@ -63,7 +63,7 @@ resource "netbox_power_feed" "b" {
   name                    = "${var.name}-b"
   power_panel_id          = var.site.panel_b_id
   rack_id                 = netbox_rack.this.id
-  type                    = "primary"
+  type                    = "redundant"
   status                  = "active"
   supply                  = "ac"
   voltage                 = 208

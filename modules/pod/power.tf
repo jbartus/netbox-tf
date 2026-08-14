@@ -55,9 +55,12 @@ locals {
 }
 
 resource "netbox_cable" "net_whip" {
-  for_each = netbox_power_feed.net
-  status   = "connected"
-  type     = "power"
+  for_each = {
+    a = netbox_power_feed.net_a.id
+    b = netbox_power_feed.net_b.id
+  }
+  status = "connected"
+  type   = "power"
 
   a_termination {
     object_type = "dcim.powerport"
@@ -65,7 +68,7 @@ resource "netbox_cable" "net_whip" {
   }
   b_termination {
     object_type = "dcim.powerfeed"
-    object_id   = each.value.id
+    object_id   = each.value
   }
 }
 

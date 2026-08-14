@@ -49,15 +49,24 @@ resource "netbox_rack" "net" {
   rack_type_id = data.netbox_rack_type.rack.id
 }
 
-resource "netbox_power_feed" "net" {
-  for_each = {
-    a = netbox_power_panel.a.id
-    b = netbox_power_panel.b.id
-  }
-  name                    = "${var.name}-net-${each.key}"
-  power_panel_id          = each.value
+resource "netbox_power_feed" "net_a" {
+  name                    = "${var.name}-net-a"
+  power_panel_id          = netbox_power_panel.a.id
   rack_id                 = netbox_rack.net.id
   type                    = "primary"
+  status                  = "active"
+  supply                  = "ac"
+  voltage                 = 208
+  amperage                = 30
+  phase                   = "three-phase"
+  max_percent_utilization = 80
+}
+
+resource "netbox_power_feed" "net_b" {
+  name                    = "${var.name}-net-b"
+  power_panel_id          = netbox_power_panel.b.id
+  rack_id                 = netbox_rack.net.id
+  type                    = "redundant"
   status                  = "active"
   supply                  = "ac"
   voltage                 = 208
