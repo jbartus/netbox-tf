@@ -1,0 +1,50 @@
+<!-- ewr-pod1 cage: 600 x 400 cm, drawn at 2 px/cm. Regenerate the png with:
+     rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
+     Cooling and power distribution are the facility's, so no crac units and no
+     panelboards - the cage holds racks and the ends of the a/b whips, nothing else.
+     Note svg y runs down while the floorplan's y runs up: svg_y = (400 - y) * 2 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <pattern id="tiles" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="#f4f5f7"/>
+      <path d="M120 0 L0 0 0 120" fill="none" stroke="#dcdfe4" stroke-width="2"/>
+    </pattern>
+    <pattern id="mesh" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0 L16 16 M16 0 L0 16" fill="none" stroke="#b9c0c9" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+
+  <!-- 600mm raised floor tiles across the whole cage -->
+  <rect width="1200" height="800" fill="url(#tiles)"/>
+
+  <!-- cage mesh, with a 120cm door opening on the west wall level with the cold aisle -->
+  <g stroke="#5b6470" stroke-width="8" fill="none">
+    <path d="M40 40 H1160 V760 H40 V700"/>
+    <path d="M40 460 V40"/>
+  </g>
+  <g fill="url(#mesh)" opacity="0.55">
+    <rect x="40" y="40" width="1120" height="16"/>
+    <rect x="40" y="744" width="1120" height="16"/>
+    <rect x="1144" y="40" width="16" height="720"/>
+    <rect x="40" y="40" width="16" height="420"/>
+    <rect x="40" y="700" width="16" height="60"/>
+  </g>
+
+  <!-- 120cm sliding door, hung on the aisle side of the mesh so it takes no cage
+       floor, sliding north along the outside of the wall -->
+  <path d="M26 200 V724" stroke="#a7b0bb" stroke-width="3" stroke-dasharray="12 9"/>
+  <rect x="18" y="460" width="16" height="240" fill="#8b94a0"/>
+  <g stroke="#a7b0bb" stroke-width="3" fill="none">
+    <path d="M26 380 V250"/>
+    <path d="M14 270 L26 246 L38 270"/>
+  </g>
+
+  <!-- card reader on the approach, clear of the leaf's travel -->
+  <rect x="18" y="716" width="16" height="44" fill="#c7ccd3" stroke="#9aa3ae" stroke-width="3"/>
+
+  <!-- room label, bottom right, clear of the row and the door -->
+  <g font-family="Helvetica, Arial, sans-serif" fill="#aeb6c0" text-anchor="end">
+    <text x="1100" y="676" font-size="48" font-weight="bold">EWR-POD1</text>
+    <text x="1100" y="708" font-size="22">6.0 m x 4.0 m &#183; 600 mm raised floor</text>
+  </g>
+</svg>

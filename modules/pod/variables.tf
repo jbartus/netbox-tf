@@ -31,3 +31,28 @@ variable "netbox" {
   })
   sensitive = true
 }
+
+# Cage geometry for the visual explorer. Racks are keyed by name rather than derived,
+# because a floorplan can hold racks this pod does not own - the edge rack, say.
+variable "floorplan" {
+  type = object({
+    image = string
+    width = number
+    depth = number
+    grid  = number
+    scale = number
+    racks = map(object({
+      x           = number
+      y           = number
+      orientation = string
+    }))
+    zones = list(object({
+      type  = string
+      label = string
+      x     = list(number)
+      y     = list(number)
+    }))
+  })
+  default     = null
+  description = "Omit for a pod with no floorplan"
+}

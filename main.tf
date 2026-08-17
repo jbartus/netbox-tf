@@ -52,6 +52,27 @@ module "ewr" {
         r1 = { prefix = "10.1.16.0/24", vid = 316, spine_ports = [1, 2] }
         r2 = { prefix = "10.1.17.0/24", vid = 317, spine_ports = [3, 4] }
       }
+
+      # one row centred in a 6x4m cage, fronts to the cold aisle. rack pitch is 85 =
+      # 75 wide plus a 10 gap; orientation 0 faces +y, so 180 faces the aisle below.
+      floorplan = {
+        image = "images/ewr-pod1-floorplan.png"
+        width = 600
+        depth = 400
+        grid  = 60
+        scale = 2
+        racks = {
+          "ewr-edge"     = { x = 135, y = 140, orientation = "180" }
+          "ewr-pod1-net" = { x = 220, y = 140, orientation = "180" }
+          "ewr-pod1-r1"  = { x = 305, y = 140, orientation = "180" }
+          "ewr-pod1-r2"  = { x = 390, y = 140, orientation = "180" }
+        }
+        # aisles are air, so they run out to the mesh
+        zones = [
+          { type = "cold-aisle", label = "cold aisle", x = [135, 465], y = [20, 140] },
+          { type = "hot-aisle", label = "hot aisle", x = [135, 465], y = [260, 380] },
+        ]
+      }
     }
   }
 

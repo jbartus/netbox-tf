@@ -45,6 +45,24 @@ variable "pods" {
       vid         = number
       spine_ports = list(number)
     }))
+    floorplan = optional(object({
+      image = string
+      width = number
+      depth = number
+      grid  = number
+      scale = number
+      racks = map(object({
+        x           = number
+        y           = number
+        orientation = string
+      }))
+      zones = list(object({
+        type  = string
+        label = string
+        x     = list(number)
+        y     = list(number)
+      }))
+    }))
   }))
 }
 

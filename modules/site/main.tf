@@ -124,6 +124,10 @@ module "pod" {
   for_each = var.pods
   source   = "../pod"
 
+  # a pod floorplan may place the edge rack, which lives in the edge module, so the
+  # edge rack has to exist before the pod's shapes are created
+  depends_on = [module.edge]
+
   name      = "${var.name}-${each.key}"
   site_id   = netbox_site.this.id
   tenant_id = data.netbox_tenant.this.id
@@ -132,6 +136,7 @@ module "pod" {
   vlan_group_id = netbox_vlan_group.this.id
   ipam_role_id  = data.netbox_ipam_role.compute.id
   racks         = each.value.racks
+  floorplan     = each.value.floorplan
 
   netbox = var.netbox
 }

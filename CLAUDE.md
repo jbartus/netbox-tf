@@ -39,7 +39,7 @@ re-imports the NDX device types, and every `data.netbox_device_type` lookup fail
     main.tf                  globals sentinel + two site modules
     modules/site             site, VLAN group, site-wide vlans/prefixes
       modules/edge-rack      MMR location, panels, rack, 2x MX204, OOB switch
-      modules/pod            pod location, panels, spine rack, leaf-spine uplinks
+      modules/pod            pod location, panels, spine rack, leaf-spine uplinks, floorplan
         modules/compute-rack rack, 2 PDUs, leaf, servers, per-rack IPAM
 
 Adding a compute rack is one line in a pod's `racks` map. Adding a pod is one entry
@@ -47,6 +47,40 @@ in a site's `pods`. Adding a site is one module block.
 
 Root .tf files follow NetBox's Django apps: circuits, dcim, extras, ipam, tenancy.
 Plus ndx.tf (a plugin) and providers.tf.
+
+## Floorplans
+
+`ewr-pod1` has a cage floorplan for the Visual Explorer, drawn by `netbox_physical_
+geometry`: a floorplan per location, an image layer, a shape per rack and a zone per
+aisle. The plugin has no Terraform resources, so `scripts/apply-floorplan.sh` builds
+the whole tree in one pass from a JSON spec — one script rather than four because
+local-exec cannot hand the new floorplan and layer ids to a later resource. Deleting
+a floorplan cascades to its children, so the script deletes and recreates, which makes
+edits land instead of stacking duplicates.
+
+The layout lives in main.tf under the pod's entry, keyed by rack *name*, because a
+floorplan may place racks the pod does not own — the edge rack is in the edge module.
+That is also why `module.pod` carries `depends_on = [module.edge]`.
+
+`images/ewr-pod1-floorplan.svg` is the source, the `.png` beside it is what NetBox
+gets. Both are committed. Regenerate with:
+
+    rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
+
+Five things about this plugin that cost real time to work out:
+
+- **`image_origin_*` is in image pixels, not the base unit,** and anchors the bottom
+  of the image, so origin_y is `depth * scale` — not 0. Getting it wrong slides the
+  background a whole floorplan away from the racks.
+- **`orientation = "0"` faces +Y.** A rack north of its cold aisle needs `180`. Get it
+  backwards and the PSU fans face the cold aisle.
+- **`layer.order` must be >= 1.** Zero is a validation error.
+- **The layer image is a Django ImageField, so SVG is rejected** — Pillow has to
+  decode it. Hence the committed PNG.
+- **A shape can reference a rack in any location** and the API will not complain, but
+  the explorer only draws it when its scope selector is on "all locations".
+
+SVG y runs down while the floorplan's y runs up: `svg_y = (depth - y) * scale`.
 
 ## Conventions
 

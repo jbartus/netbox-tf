@@ -42,6 +42,8 @@ two sites, ewr (165 halsey) and jfk (375 pearl). each has an edge rack with two 
 
 everything is powered a/b down to the outlet, and cabled
 
+`ewr-pod1` also gets a cage floorplan for the visual explorer - a 6x4m room with one row of racks between a hot and a cold aisle. the drawing is `images/ewr-pod1-floorplan.svg`, the layout is in `main.tf`.
+
 adding a compute rack is one line in a pod's `racks` map. adding a pod is one entry in a site's `pods`. adding a site is one module block.
 
 # the rest

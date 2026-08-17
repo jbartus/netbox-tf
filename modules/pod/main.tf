@@ -101,6 +101,40 @@ resource "netbox_device" "spine" {
   status         = "active"
 }
 
+# the shapes reference racks by name, so every rack has to exist first
+resource "terraform_data" "floorplan" {
+  count      = var.floorplan == null ? 0 : 1
+  depends_on = [module.compute, netbox_rack.net]
+
+  input = {
+    spec = jsonencode({
+      width = var.floorplan.width
+      depth = var.floorplan.depth
+      grid  = var.floorplan.grid
+      scale = var.floorplan.scale
+      racks = var.floorplan.racks
+      zones = var.floorplan.zones
+    })
+    image = "${path.root}/${var.floorplan.image}"
+  }
+  triggers_replace = {
+    spec  = jsonencode(var.floorplan)
+    image = filemd5("${path.root}/${var.floorplan.image}")
+  }
+
+  provisioner "local-exec" {
+    command = "${path.root}/scripts/apply-floorplan.sh"
+    environment = {
+      NETBOX_URL   = var.netbox.url
+      NETBOX_TOKEN = var.netbox.token
+      LOCATION     = netbox_location.this.name
+      NAME         = var.name
+      IMAGE        = self.input.image
+      SPEC         = self.input.spec
+    }
+  }
+}
+
 module "compute" {
   for_each = var.racks
   source   = "../compute-rack"
