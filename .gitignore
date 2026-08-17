@@ -46,3 +46,5 @@ terraform.rc
 
 # Scratch notes, todos and upstream bug reports
 *.txt
+
+.DS_Store

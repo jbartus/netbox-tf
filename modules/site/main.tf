@@ -75,6 +75,32 @@ resource "netbox_prefix" "site" {
   tenant_id = data.netbox_tenant.this.id
 }
 
+# image attachments have no provider resource, and the upload is multipart
+resource "terraform_data" "image" {
+  count = var.image == null ? 0 : 1
+
+  input = {
+    file = "${path.root}/${var.image}"
+    hash = filemd5("${path.root}/${var.image}")
+    site = netbox_site.this.id
+  }
+  triggers_replace = {
+    hash = filemd5("${path.root}/${var.image}")
+    site = netbox_site.this.id
+  }
+
+  provisioner "local-exec" {
+    command = "${path.root}/scripts/attach-image.sh"
+    environment = {
+      NETBOX_URL   = var.netbox.url
+      NETBOX_TOKEN = var.netbox.token
+      OBJECT_TYPE  = "dcim.site"
+      OBJECT_ID    = self.input.site
+      FILE         = self.input.file
+    }
+  }
+}
+
 resource "netbox_config_context" "ntp" {
   name  = "${var.name}-ntp"
   sites = [netbox_site.this.id]

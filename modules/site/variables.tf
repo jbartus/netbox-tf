@@ -7,6 +7,12 @@ variable "latitude" { type = string }
 variable "longitude" { type = string }
 variable "timezone" { type = string }
 
+variable "image" {
+  type        = string
+  default     = null
+  description = "Photo of the building, path relative to the repo root"
+}
+
 variable "site_group" {
   type    = string
   default = "Data Centers"

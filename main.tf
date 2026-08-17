@@ -38,6 +38,7 @@ module "ewr" {
   longitude        = "-74.173213"
   timezone         = "America/New_York"
   dns_zone         = "ewr.vaulter.net"
+  image            = "images/165-Halsey-St-Newark-NJ-Building.jpg"
 
   supernet          = "10.1.0.0/16"
   networking_prefix = "10.1.1.0/24"
@@ -69,6 +70,7 @@ module "jfk" {
   longitude        = "-74.001178"
   timezone         = "America/New_York"
   dns_zone         = "jfk.vaulter.net"
+  image            = "images/verizon-building.jpg"
 
   supernet          = "10.2.0.0/16"
   networking_prefix = "10.2.1.0/24"
