@@ -41,8 +41,9 @@ fp=$(curl -sS --fail-with-body -X POST "$g/floorplans/" -H "$auth" -H "$json" \
   -d "{\"name\":\"$NAME\",\"location\":$location,\"base_unit\":\"cm\",
        \"width\":$width,\"depth\":$depth,\"grid_interval\":$grid}" | jq -re .id)
 
-# image_origin is in image pixels, not the base unit, and anchors the bottom of the
-# image - so it is depth * scale, not 0. order must be >= 1.
+# image_origin_* is the pixel coordinate within the image at which floorplan (0,0)
+# falls. The room fills the image, so that is the image's bottom-left: depth * scale.
+# order is 1-1000.
 layer=$(curl -sS --fail-with-body -X POST "$g/layers/" -H "$auth" \
   -F "floorplan=$fp" -F "name=cage" -F "order=1" -F "is_visible=true" -F "opacity=100" \
   -F "image=@$IMAGE" -F "image_scale=$scale" -F "image_scale_unit=cm" \

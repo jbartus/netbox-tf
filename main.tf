@@ -53,8 +53,8 @@ module "ewr" {
         r2 = { prefix = "10.1.17.0/24", vid = 317, spine_ports = [3, 4] }
       }
 
-      # one row centred in a 6x4m cage, fronts to the cold aisle. rack pitch is 85 =
-      # 75 wide plus a 10 gap; orientation 0 faces +y, so 180 faces the aisle below.
+      # one row centred in a 6x4m cage. rack pitch is 85 = 75 wide plus a 10 gap.
+      # orientation is a compass bearing, so 180 faces the cold aisle to the south.
       floorplan = {
         image = "images/ewr-pod1-floorplan.png"
         width = 600

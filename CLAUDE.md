@@ -67,18 +67,26 @@ gets. Both are committed. Regenerate with:
 
     rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
 
-Five things about this plugin that cost real time to work out:
+Plugin behaviour worth knowing before editing the layout:
 
-- **`image_origin_*` is in image pixels, not the base unit,** and anchors the bottom
-  of the image, so origin_y is `depth * scale` — not 0. Getting it wrong slides the
-  background a whole floorplan away from the racks.
-- **`orientation = "0"` faces +Y.** A rack north of its cold aisle needs `180`. Get it
-  backwards and the PSU fans face the cold aisle.
-- **`layer.order` must be >= 1.** Zero is a validation error.
-- **The layer image is a Django ImageField, so SVG is rejected** — Pillow has to
-  decode it. Hence the committed PNG.
-- **A shape can reference a rack in any location** and the API will not complain, but
-  the explorer only draws it when its scope selector is on "all locations".
+- **`image_origin_x/y` are pixel offsets**, giving the pixel coordinate within the
+  image at which floorplan (0, 0) falls. Our room fills the image and floorplan
+  (0, 0) is the room's bottom-left corner, so origin_y is the image height —
+  `depth * scale`. Leaving it at 0 puts the image a full floorplan out of position.
+- **`orientation` is a compass direction:** 0 north, 90 east, 180 south, 270 west.
+  Our single row sits north of its cold aisle and faces south, so `180`. East and
+  west swap a shape's effective width and depth, which changes the row pitch.
+- **A shape's anchor is its top-left corner**, not its centre.
+- **`layer.order` is 1-1000.** Zero fails validation.
+- **The layer image is a Django ImageField**, so Pillow has to decode it and SVG is
+  not accepted. Hence the committed PNG.
+- **A shape may reference a rack in any location.** `ewr-edge` lives in MMR2, and the
+  explorer draws it when its scope selector is set to all locations.
+- **A dark plane renders below the floor**, a little narrower and deeper than the
+  floorplan. It does not track the floorplan dimensions. It comes from the Visual
+  Explorer frontend rather than this data, so there is nothing here to set.
+
+The plugin's own docs under `docs/models/` are the reference for the above.
 
 SVG y runs down while the floorplan's y runs up: `svg_y = (depth - y) * scale`.
 
