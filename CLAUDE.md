@@ -87,13 +87,9 @@ layer takes, as the image field will not accept SVG. Both are committed. Regener
 
 SVG y runs down while floorplan y runs up: `svg_y = (depth - y) * scale`.
 
-Two things the field reference does not cover:
-
-- `image_origin_x/y` are pixel offsets giving where floorplan (0,0) falls within the
-  image. Both rooms fill their image, so origin_y is `depth * scale`.
-- A dark plane renders below the floor, slightly narrower and deeper than the
-  floorplan. It does not track the floorplan dimensions and comes from the frontend,
-  so there is nothing to set here.
+One thing the field reference does not cover: `image_origin_x/y` are pixel offsets
+giving where floorplan (0,0) falls within the image. Both rooms fill their image, so
+origin_y is `depth * scale`.
 
 ## Things that will bite
 
