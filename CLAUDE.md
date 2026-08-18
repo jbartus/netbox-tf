@@ -25,8 +25,7 @@ Then `rm -f terraform.tfstate*`, or Terraform believes the provisioner-backed re
 already ran, never re-imports the NDX device types, and every `data.netbox_device_type`
 lookup fails.
 
-A cold apply is ~900 objects. Use `-parallelism=6` or lower; the default overloads the
-instance into 502s.
+A cold apply is ~900 objects and takes about three minutes at the default parallelism.
 
 ## Structure
 
