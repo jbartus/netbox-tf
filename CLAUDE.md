@@ -63,21 +63,25 @@ drift apart, one server group per feed leg.
 
 ## Floorplans
 
-`ewr-pod1` carries a cage floorplan for Visual Explorer, from the
-`netbox_physical_geometry` plugin. Field reference:
-<https://netboxlabs.com/docs/visual-explorer/floorplans/>
+Both pods carry a floorplan for Visual Explorer, from the `netbox_physical_geometry`
+plugin. Field reference: <https://netboxlabs.com/docs/visual-explorer/floorplans/>
+
+`ewr-pod1` is a 6x4m cage: mesh, sliding door, one row of four between its aisles.
+`jfk-pod1` is a 10.2x4.2m slice of a shared hall with no cage, our four racks mid-row;
+the neighbouring racks are drawn into the image rather than modelled, since they are
+not ours, and the aisles run the full width.
 
 The plugin has no Terraform resources, so `scripts/apply-floorplan.sh` builds the
 floorplan, layer, shapes and zones in one pass from a JSON spec — one script rather
 than four because local-exec cannot hand the new ids to a later resource. Deleting a
 floorplan cascades to its children, so the script deletes and recreates.
 
-The layout lives in main.tf, keyed by rack name rather than derived from the pod,
-because it places `ewr-edge` and the edge module owns that. Hence
+Each layout lives in main.tf under its pod, keyed by rack name rather than derived,
+because both place their site's edge rack and the edge module owns that. Hence
 `depends_on = [module.edge]` on `module.pod`.
 
-`images/ewr-pod1-floorplan.svg` is the source; the `.png` beside it is what the layer
-takes, as the image field will not accept SVG. Both are committed. Regenerate with:
+The `images/*-floorplan.svg` files are the source; the `.png` beside each is what the
+layer takes, as the image field will not accept SVG. Both are committed. Regenerate:
 
     rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
 
@@ -86,7 +90,7 @@ SVG y runs down while floorplan y runs up: `svg_y = (depth - y) * scale`.
 Two things the field reference does not cover:
 
 - `image_origin_x/y` are pixel offsets giving where floorplan (0,0) falls within the
-  image. This room fills its image, so origin_y is `depth * scale`.
+  image. Both rooms fill their image, so origin_y is `depth * scale`.
 - A dark plane renders below the floor, slightly narrower and deeper than the
   floorplan. It does not track the floorplan dimensions and comes from the frontend,
   so there is nothing to set here.

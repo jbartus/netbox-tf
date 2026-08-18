@@ -1,0 +1,55 @@
+<!-- jfk-pod1: 1020 x 420 cm slice of a shared data hall, drawn at 2 px/cm. No cage -
+     our four racks are a contiguous group in a longer row, so the neighbouring racks
+     are drawn here as context rather than created as netbox objects. The aisles and
+     the row both run off both edges. Regenerate the png with:
+     rsvg-convert -o images/jfk-pod1-floorplan.png images/jfk-pod1-floorplan.svg
+     Note svg y runs down while the floorplan's y runs up: svg_y = (420 - y) * 2 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="2040" height="840" viewBox="0 0 2040 840">
+  <defs>
+    <pattern id="tiles" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="#f4f5f7"/>
+      <path d="M120 0 L0 0 0 120" fill="none" stroke="#dcdfe4" stroke-width="2"/>
+    </pattern>
+    <pattern id="perf" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="#eef1f5"/>
+      <path d="M120 0 L0 0 0 120" fill="none" stroke="#d3d8de" stroke-width="2"/>
+      <g fill="#c2c9d2">
+        <circle cx="30" cy="30" r="4"/><circle cx="60" cy="30" r="4"/><circle cx="90" cy="30" r="4"/>
+        <circle cx="30" cy="60" r="4"/><circle cx="60" cy="60" r="4"/><circle cx="90" cy="60" r="4"/>
+        <circle cx="30" cy="90" r="4"/><circle cx="60" cy="90" r="4"/><circle cx="90" cy="90" r="4"/>
+      </g>
+    </pattern>
+  </defs>
+
+  <!-- 600mm raised floor across the hall -->
+  <rect width="2040" height="840" fill="url(#tiles)"/>
+
+  <!-- perforated tiles down the cold aisle, the tile row against the front of the row -->
+  <rect x="0" y="540" width="2040" height="120" fill="url(#perf)"/>
+
+  <!-- the rest of the row: neighbouring racks, not ours, no netbox objects behind them.
+       our four sit at 340/425/510/595 cm and are left blank for the explorer to fill -->
+  <g fill="#e4e7eb" stroke="#b3bac3" stroke-width="3">
+    <rect x="0" y="300" width="150" height="240"/>
+    <rect x="170" y="300" width="150" height="240"/>
+    <rect x="340" y="300" width="150" height="240"/>
+    <rect x="510" y="300" width="150" height="240"/>
+    <rect x="1360" y="300" width="150" height="240"/>
+    <rect x="1530" y="300" width="150" height="240"/>
+    <rect x="1700" y="300" width="150" height="240"/>
+    <rect x="1870" y="300" width="150" height="240"/>
+  </g>
+
+  <!-- tile column references, as a hall plan would carry. no row letters: the row
+       runs flush to both edges, so there is no margin to put them in -->
+  <g font-family="Helvetica, Arial, sans-serif" font-size="20" fill="#b9c0c9" text-anchor="middle">
+    <text x="60" y="822">1</text><text x="300" y="822">3</text><text x="540" y="822">5</text>
+    <text x="780" y="822">7</text><text x="1020" y="822">9</text><text x="1260" y="822">11</text>
+    <text x="1500" y="822">13</text><text x="1740" y="822">15</text><text x="1980" y="822">17</text>
+  </g>
+  <!-- label, top left, clear of the row and the perforated aisle -->
+  <g font-family="Helvetica, Arial, sans-serif" fill="#aeb6c0">
+    <text x="60" y="130" font-size="52" font-weight="bold">JFK-POD1</text>
+    <text x="62" y="166" font-size="24">10.2 m x 4.2 m &#183; 600 mm raised floor</text>
+  </g>
+</svg>

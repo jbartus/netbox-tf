@@ -105,6 +105,27 @@ module "jfk" {
         r1 = { prefix = "10.2.16.0/24", vid = 316, spine_ports = [1, 2] }
         r2 = { prefix = "10.2.17.0/24", vid = 317, spine_ports = [3, 4] }
       }
+
+      # no cage here, just four racks mid-row in a shared hall. the neighbouring racks
+      # are drawn into the image rather than modelled - they are not ours. same 85 pitch
+      # and southward facing as ewr, but the aisles run the full width and off both ends.
+      floorplan = {
+        image = "images/jfk-pod1-floorplan.png"
+        width = 1020
+        depth = 420
+        grid  = 60
+        scale = 2
+        racks = {
+          "jfk-edge"     = { x = 340, y = 150, orientation = "180" }
+          "jfk-pod1-net" = { x = 425, y = 150, orientation = "180" }
+          "jfk-pod1-r1"  = { x = 510, y = 150, orientation = "180" }
+          "jfk-pod1-r2"  = { x = 595, y = 150, orientation = "180" }
+        }
+        zones = [
+          { type = "cold-aisle", label = "cold aisle", x = [0, 1020], y = [0, 150] },
+          { type = "hot-aisle", label = "hot aisle", x = [0, 1020], y = [270, 420] },
+        ]
+      }
     }
   }
 
