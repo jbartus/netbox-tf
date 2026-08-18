@@ -5,18 +5,13 @@ constantly — never migrate, never preserve data, never warn about replacement.
 
 ## Running it
 
-Resetting the instance is a DB restore, never a `terraform destroy`:
+Reset with a DB restore, never `terraform destroy`:
 
-    ./scripts/nbc-restore-db.sh
+    ./scripts/nbc-restore-db.sh        # credentials in scripts/.env
 
-It reads `ORG_ID`, `TARGET_NB_ID`, `BACKUP_ID` and `API_KEY` from `scripts/.env`.
-
-The script returns as soon as it POSTs the restore — it does not wait for it. The
-restore takes 3-5 minutes (observed: 165s), and the instance stops answering
-entirely partway through, so neither "the script exited" nor "the API errored" tells
-you anything. Be patient, and take three clean reads in a row before believing it —
-a single good read once came back from a process that then went away, and the apply
-died on 503s a couple of hundred resources in:
+It returns as soon as it POSTs. The restore takes 3-5 minutes and the instance stops
+answering partway through, so neither the script exiting nor the API erroring means
+anything. Poll until the device count reads 0 three times running:
 
     sleep 150
     ok=0
@@ -25,70 +20,27 @@ died on 503s a couple of hundred resources in:
       c=$(curl -sf -H "Authorization: Token $T" "$U/api/dcim/devices/?limit=1" | jq -r '.count // empty')
       if [ "$c" = 0 ]; then ok=$((ok + 1)); else ok=0; fi
     done
-    sleep 5
 
-Then delete the state:
+Then `rm -f terraform.tfstate*`, or Terraform believes the provisioner-backed resources
+already ran, never re-imports the NDX device types, and every `data.netbox_device_type`
+lookup fails.
 
-    rm -f terraform.tfstate*
-
-Otherwise Terraform believes the provisioner-backed resources already ran, never
-re-imports the NDX device types, and every `data.netbox_device_type` lookup fails.
+A cold apply is ~900 objects. Use `-parallelism=6` or lower; the default overloads the
+instance into 502s.
 
 ## Structure
 
     main.tf                  globals sentinel + two site modules
     modules/site             site, VLAN group, site-wide vlans/prefixes
       modules/edge-rack      MMR location, panels, rack, 2x MX204, OOB switch
-      modules/pod            pod location, panels, spine rack, leaf-spine uplinks, floorplan
-        modules/compute-rack rack, 2 PDUs, leaf, servers, per-rack IPAM
+      modules/pod            pod location, panels, spine rack, uplinks, floorplan
+        modules/compute-rack rack, 2 PDUs, leaf, servers, per-rack IPAM and cabling
 
-Adding a compute rack is one line in a pod's `racks` map. Adding a pod is one entry
-in a site's `pods`. Adding a site is one module block.
+Adding a compute rack is one line in a pod's `racks` map. Adding a pod is one entry in
+a site's `pods`. Adding a site is one module block.
 
-Root .tf files follow NetBox's Django apps: circuits, dcim, extras, ipam, tenancy.
-Plus ndx.tf (a plugin) and providers.tf.
-
-## Floorplans
-
-`ewr-pod1` has a cage floorplan for the Visual Explorer, drawn by `netbox_physical_
-geometry`: a floorplan per location, an image layer, a shape per rack and a zone per
-aisle. The plugin has no Terraform resources, so `scripts/apply-floorplan.sh` builds
-the whole tree in one pass from a JSON spec — one script rather than four because
-local-exec cannot hand the new floorplan and layer ids to a later resource. Deleting
-a floorplan cascades to its children, so the script deletes and recreates, which makes
-edits land instead of stacking duplicates.
-
-The layout lives in main.tf under the pod's entry, keyed by rack *name*, because a
-floorplan may place racks the pod does not own — the edge rack is in the edge module.
-That is also why `module.pod` carries `depends_on = [module.edge]`.
-
-`images/ewr-pod1-floorplan.svg` is the source, the `.png` beside it is what NetBox
-gets. Both are committed. Regenerate with:
-
-    rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
-
-Plugin behaviour worth knowing before editing the layout:
-
-- **`image_origin_x/y` are pixel offsets**, giving the pixel coordinate within the
-  image at which floorplan (0, 0) falls. Our room fills the image and floorplan
-  (0, 0) is the room's bottom-left corner, so origin_y is the image height —
-  `depth * scale`. Leaving it at 0 puts the image a full floorplan out of position.
-- **`orientation` is a compass direction:** 0 north, 90 east, 180 south, 270 west.
-  Our single row sits north of its cold aisle and faces south, so `180`. East and
-  west swap a shape's effective width and depth, which changes the row pitch.
-- **A shape's anchor is its top-left corner**, not its centre.
-- **`layer.order` is 1-1000.** Zero fails validation.
-- **The layer image is a Django ImageField**, so Pillow has to decode it and SVG is
-  not accepted. Hence the committed PNG.
-- **A shape may reference a rack in any location.** `ewr-edge` lives in MMR2, and the
-  explorer draws it when its scope selector is set to all locations.
-- **A dark plane renders below the floor**, a little narrower and deeper than the
-  floorplan. It does not track the floorplan dimensions. It comes from the Visual
-  Explorer frontend rather than this data, so there is nothing here to set.
-
-The plugin's own docs under `docs/models/` are the reference for the above.
-
-SVG y runs down while the floorplan's y runs up: `svg_y = (depth - y) * scale`.
+Root .tf files follow NetBox's Django apps: circuits, dcim, extras, ipam, tenancy, plus
+ndx.tf and providers.tf.
 
 ## Conventions
 
@@ -98,62 +50,76 @@ Names carry their position: `ewr-pod1-r1-01`, `ewr-pod1-r1-leaf`, `ewr-pod1-spin
 One /24 and one VLAN per compute rack, VID matching the third octet:
 
     10.1.16.0/24  vid 316   ewr-pod1-r1
-      .1          gateway (reserved, no owner yet)
-      .2 - .9     dhcp pool (mark_populated + mark_utilized)
-      .10 - .99   servers   (ip range)
-      .100 - .199 their iLOs (ip range)
+      .1          gateway, reserved
+      .2 - .9     dhcp pool     (mark_populated + mark_utilized; the dhcp server owns these)
+      .10 - .99   servers       (ip range, unmarked - the addresses are real objects)
+      .100 - .199 their iLOs    (ip range, unmarked)
 
-So the nth server is .10+n and its iLO is .100+n. The two ranges only say where the
-halves are; a rack tops out at 90 servers, which no realistic 42U layout reaches.
-They deliberately omit mark_populated/mark_utilized, unlike the dhcp pool: the
-addresses inside them are real NetBox objects, so utilization should come from those.
-And they document, they don't enforce — nothing stops an iLO landing in the server
-half.
+Server n is .10+n and its iLO .100+n. The ranges document the halves, they don't
+enforce them.
 
-Compute rack layout lives in `local.slots` — U position paired with outlet so they
-can't drift apart, one server group per PDU feed leg.
+Compute rack layout is `local.slots` — U position paired with PDU outlet so they can't
+drift apart, one server group per feed leg.
+
+## Floorplans
+
+`ewr-pod1` carries a cage floorplan for Visual Explorer, from the
+`netbox_physical_geometry` plugin. Field reference:
+<https://netboxlabs.com/docs/visual-explorer/floorplans/>
+
+The plugin has no Terraform resources, so `scripts/apply-floorplan.sh` builds the
+floorplan, layer, shapes and zones in one pass from a JSON spec — one script rather
+than four because local-exec cannot hand the new ids to a later resource. Deleting a
+floorplan cascades to its children, so the script deletes and recreates.
+
+The layout lives in main.tf, keyed by rack name rather than derived from the pod,
+because it places `ewr-edge` and the edge module owns that. Hence
+`depends_on = [module.edge]` on `module.pod`.
+
+`images/ewr-pod1-floorplan.svg` is the source; the `.png` beside it is what the layer
+takes, as the image field will not accept SVG. Both are committed. Regenerate with:
+
+    rsvg-convert -o images/ewr-pod1-floorplan.png images/ewr-pod1-floorplan.svg
+
+SVG y runs down while floorplan y runs up: `svg_y = (depth - y) * scale`.
+
+Two things the field reference does not cover:
+
+- `image_origin_x/y` are pixel offsets giving where floorplan (0,0) falls within the
+  image. This room fills its image, so origin_y is `depth * scale`.
+- A dark plane renders below the floor, slightly narrower and deeper than the
+  floorplan. It does not track the floorplan dimensions and comes from the frontend,
+  so there is nothing to set here.
 
 ## Things that will bite
 
-**Exclusivity.** Cable terminations, rack units and PDU outlets each hold one thing.
-Renumbering any of them is a destroy-then-create, never an in-place update. A plan
-that looks like a tidy shuffle will fail partway with duplicate-termination or
-"U27 is already occupied".
+**Exclusivity.** Cable terminations, rack units and PDU outlets hold one thing each.
+Renumbering any of them is destroy-then-create; a plan that looks like a tidy shuffle
+fails partway with duplicate-termination or "U27 is already occupied".
 
-**Device type changes are a silent trap.** Terraform plans `device_type_id` as an
-in-place update, but NetBox does not re-instantiate components. The device keeps its
-old interfaces while reporting the new type. Force replacement.
+**Device type changes.** Terraform plans `device_type_id` as an in-place update, but
+NetBox does not re-instantiate components — the device keeps its old interfaces while
+reporting the new type. Force replacement.
 
-**Renaming a resource address leaves no dependency edge.** Terraform will try to
-destroy the old object before the things referencing it have moved.
+**Bulk API calls silently skip items.** One call covering 80 devices returns 2xx having
+missed a handful, so the provisioner scripts loop one device at a time.
 
-**Bulk API calls silently skip items.** A single call covering 80 devices returns 2xx
-having missed a handful. The provisioner scripts loop one device at a time on purpose.
+**Component data sources are unscoped.** They accept only name, tag and device_id — no
+rack_id or location_id — so each one reads every object of that type in the instance.
+`tag` does not help: on a component endpoint it matches the component's own tags, not
+the parent device's, and nothing here tags components.
 
-**Provider filters are limited.** The component data sources accept only name, tag and
-device_id — no rack_id or location_id — so they read every object of that type in the
-instance. `tag` does not help: on a component endpoint it matches the component's own
-tags, not the parent device's, and nothing here tags components.
-
-Because the reads are unscoped, one rack paginates over a list the other racks are
-still inserting into, and offset pagination over a moving result set hands back some
-rows twice. So the 11 locals built from those data sources group with `...` and every
-lookup ends in `[0]`:
+Two consequences. Reads get slower with every rack added. And offset pagination over a
+list other modules are still inserting into returns some rows twice, so the 12 locals
+built from these data sources group with `...` and all 25 lookups end in `[0]`:
 
     psu_ports = { for p in ... : "${p.device_id}/${p.name}" => p.id... }
     object_id = local.psu_ports["${dev}/PSU1"][0]
 
-This tolerates the race rather than removing it — safe because device_id + name is
-unique in NetBox, so a repeated key is always the same object. Rows can only be
-duplicated, never missed: a miss needs a row's sort position to move earlier, which
-takes a delete or a rename, and a cold apply only inserts.
-
-**When the provider learns rack_id/location_id, undo the dedupe.** Add the filter to
-each of the 11 data sources, then strip `...` from the locals and `[0]` from the
-lookups in modules/{compute-rack/{power,ipam},pod/{power,uplinks},edge-rack/power}.tf.
-Leaving it in place is harmless, just noise.
+Safe because device_id + name is unique in NetBox, so a repeated key is always the same
+object. When the provider learns rack_id/location_id, add the filter and strip `...`
+and `[0]` from modules/{compute-rack/{power,ipam,cabling},pod/{power,uplinks},edge-rack/power}.tf.
 
 **Expect in-place rack changes on every plan.** Every rack plans a diff clearing
-`max_weight`, `mounting_depth`, `outer_*` and `weight*` back to null — the provider
-doesn't track the fields a rack inherits from its rack type. Provider bug, not drift,
-and applying it changes nothing — don't try to fix it, don't report it as drift.
+`max_weight`, `mounting_depth`, `outer_*` and `weight*` back to null. Provider bug, not
+drift; applying it changes nothing.
