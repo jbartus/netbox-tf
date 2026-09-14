@@ -107,6 +107,7 @@ resource "terraform_data" "floorplan" {
   depends_on = [module.compute, netbox_rack.net]
 
   input = {
+    edge_rack = var.edge_rack_id
     spec = jsonencode({
       width = var.floorplan.width
       depth = var.floorplan.depth

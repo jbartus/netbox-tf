@@ -124,10 +124,6 @@ module "pod" {
   for_each = var.pods
   source   = "../pod"
 
-  # a pod floorplan may place the edge rack, which lives in the edge module, so the
-  # edge rack has to exist before the pod's shapes are created
-  depends_on = [module.edge]
-
   name      = "${var.name}-${each.key}"
   site_id   = netbox_site.this.id
   tenant_id = data.netbox_tenant.this.id
@@ -137,6 +133,11 @@ module "pod" {
   ipam_role_id  = data.netbox_ipam_role.compute.id
   racks         = each.value.racks
   floorplan     = each.value.floorplan
+
+  # a floorplan may place the edge rack, so the pod needs it to exist first. Keep this
+  # a dependency on the one rack: depends_on the whole edge module drags its perpetual
+  # churn into every data source in here, deferring every lookup to apply time.
+  edge_rack_id = module.edge.rack_id
 
   netbox = var.netbox
 }

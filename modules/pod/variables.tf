@@ -56,3 +56,8 @@ variable "floorplan" {
   default     = null
   description = "Omit for a pod with no floorplan"
 }
+
+variable "edge_rack_id" {
+  type        = number
+  description = "The site's edge rack, which a floorplan may place"
+}

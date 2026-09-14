@@ -35,9 +35,6 @@ A cold apply is ~900 objects and takes about three minutes at the default parall
       modules/pod            pod location, panels, spine rack, uplinks, floorplan
         modules/compute-rack rack, 2 PDUs, leaf, servers, per-rack IPAM and cabling
 
-Adding a compute rack is one line in a pod's `racks` map. Adding a pod is one entry in
-a site's `pods`. Adding a site is one module block.
-
 Root .tf files follow NetBox's Django apps: circuits, dcim, extras, ipam, tenancy, plus
 ndx.tf and providers.tf.
 
