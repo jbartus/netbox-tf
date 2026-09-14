@@ -96,7 +96,7 @@ resource "netbox_device" "pdu" {
 
 resource "netbox_device" "rtr" {
   for_each       = { rtr1 = 44, rtr2 = 43 }
-  name           = each.key
+  name           = "${var.name}-edge-${each.key}"
   rack_id        = netbox_rack.this.id
   device_type_id = data.netbox_device_type.router.id
   role_id        = data.netbox_device_role.router.id
@@ -109,7 +109,7 @@ resource "netbox_device" "rtr" {
 }
 
 resource "netbox_device" "oob" {
-  name           = "oob1"
+  name           = "${var.name}-edge-oob1"
   rack_id        = netbox_rack.this.id
   device_type_id = data.netbox_device_type.oob.id
   role_id        = data.netbox_device_role.oob.id
